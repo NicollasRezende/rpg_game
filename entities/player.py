@@ -1,5 +1,6 @@
 import pygame
 from settings import SCREEN_WIDTH, SCREEN_HEIGHT
+import math
 
 class Entity:
     def __init__(self, x, y, width, height, color):
@@ -15,28 +16,33 @@ class Entity:
 class Player(Entity):
     def __init__(self, x, y):
         super().__init__(x, y, 40, 40, (0, 255, 0))  # Verde
+        self.speed = 5  # Velocidade do jogador
 
     def update(self, events, obstacles):
         keys = pygame.key.get_pressed()
-        speed = 5
-        new_x, new_y = self.rect.x, self.rect.y
+        dx, dy = 0, 0  # Delta X e Delta Y (para movimento)
 
         if keys[pygame.K_w]:
-            new_y -= speed
+            dy -= self.speed
         if keys[pygame.K_s]:
-            new_y += speed
+            dy += self.speed
         if keys[pygame.K_a]:
-            new_x -= speed
+            dx -= self.speed
         if keys[pygame.K_d]:
-            new_x += speed
+            dx += self.speed
 
-        # Criar um novo retângulo para testar a posição futura
-        new_rect = self.rect.move(new_x - self.rect.x, new_y - self.rect.y)
+        # 🔹 Ajuste para manter velocidade igual em diagonal
+        if dx != 0 and dy != 0:
+            diagonal_factor = 1 / math.sqrt(2)  # Normaliza o vetor diagonal
+            dx *= diagonal_factor
+            dy *= diagonal_factor
 
-        # Verificar se colide com algum obstáculo
+        # 🔹 Verifica se a nova posição do jogador não colide com obstáculos
+        new_rect = self.rect.move(dx, dy)
         if not any(new_rect.colliderect(obst) for obst in obstacles):
-            # Só move se não houver colisão
-            if 0 <= new_x <= SCREEN_WIDTH - self.rect.width:
-                self.rect.x = new_x
-            if 0 <= new_y <= SCREEN_HEIGHT - self.rect.height:
-                self.rect.y = new_y
+            self.rect.x += dx
+            self.rect.y += dy
+
+        # 🔹 Evita sair da tela
+        self.rect.x = max(0, min(self.rect.x, SCREEN_WIDTH - self.rect.width))
+        self.rect.y = max(0, min(self.rect.y, SCREEN_HEIGHT - self.rect.height))
